@@ -1,2 +1,2 @@
-add_executable( main main.cpp )
-target_link_libraries( main pthread )
+add_executable( one_to_one_sequenced_throughput_test one_to_one_sequenced_throughput_test.cpp )
+target_link_libraries( one_to_one_sequenced_throughput_test pthread )

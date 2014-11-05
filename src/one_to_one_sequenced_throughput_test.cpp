@@ -5,7 +5,7 @@
 
 using namespace disruptor;
 
-const long long N = 1000 * 1000 * 1000;
+const long long N = 1000 * 1000 * 100;
 
 template<class T>
 batch_event_processor<T>::batch_event_processor(ring_buffer<T>& r, sequence& p, sequence& s) :
@@ -51,6 +51,6 @@ int main() {
         long long rate = (N * 1000) / (diff.total_milliseconds());
 
         std::cout.imbue(std::locale(""));
-        std::cout << "Run " << j+1 << ", Disruptor=" << std::fixed << rate << " ops/sec" << std::endl;
+        std::cout << "Run " << j << ", Disruptor=" << std::fixed << rate << " ops/sec" << std::endl;
     }
 }
