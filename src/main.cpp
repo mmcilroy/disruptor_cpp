@@ -21,7 +21,6 @@ void batch_event_processor<T>::run() {
             std::this_thread::yield();
         }
         while (next_seq <= avail_seq) {
-            //std::cout << "subscriber: " << rb[next_seq] << ", expecting: " << i << std::endl;
             assert(_rb[next_seq] == i);
             ++i;
             ++next_seq;
@@ -50,6 +49,8 @@ int main() {
         boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
         boost::posix_time::time_duration diff = t2 - t1;
         long long rate = (N * 1000) / (diff.total_milliseconds());
-        std::cout << "complete in: " << diff.total_milliseconds() << " ms, rate " << rate << std::endl;
+
+        std::cout.imbue(std::locale(""));
+        std::cout << "Run " << j+1 << ", Disruptor=" << std::fixed << rate << " ops/sec" << std::endl;
     }
 }
