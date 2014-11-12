@@ -8,7 +8,7 @@ else()
     set( VERSION "${VERSION_NUMBER}-debug" )
 endif()
 
-set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wl,--no-as-needed" )
+set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -std=c++11 -Wl,--no-as-needed -O3" )
 find_package( Boost REQUIRED COMPONENTS thread system )
 include_directories( include ${Boost_INCLUDE_DIRS} )
 add_subdirectory( src )

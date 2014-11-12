@@ -1,4 +1,4 @@
-disrupt_cpp
+disruptor_cpp
 ===========
 
 A simplistic C++ implementation of the LMAX disruptor (https://github.com/LMAX-Exchange/disruptor)

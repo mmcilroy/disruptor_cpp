@@ -1,56 +1,85 @@
-#include "disruptor/sequencer.hpp"
+/**
+ * UniCast a series of items between 1 publisher and 1 event processor.
+ *
+ * +----+    +-----+
+ * | P1 |--->| EP1 |
+ * +----+    +-----+
+ *
+ * Disruptor:
+ * ==========
+ *              track to prevent wrap
+ *              +------------------+
+ *              |                  |
+ *              |                  v
+ * +----+    +====+    +====+   +-----+
+ * | P1 |--->| RB |<---| SB |   | EP1 |
+ * +----+    +====+    +====+   +-----+
+ *      claim      get    ^        |
+ *                        |        |
+ *                        +--------+
+ *                          waitFor
+ *
+ * P1  - Publisher 1
+ * RB  - RingBuffer
+ * SB  - SequenceBarrier
+ * EP1 - EventProcessor 1
+ */
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 #include "disruptor/ring_buffer.hpp"
 #include "disruptor/batch_event_processor.hpp"
-#include <boost/date_time/posix_time/posix_time.hpp>
+#include "abstract_perf_test.hpp"
+#include "test_event_handler.hpp"
 
-using namespace disruptor;
+const long ITERATIONS = 1000L * 1000L * 100L;
+const size_t BUFFER_SIZE = 1024 * 64;
 
-const long long N = 1000 * 1000 * 100;
+class one_to_one_sequenced_throughput_test : public abstract_perf_test {
+public:
+    one_to_one_sequenced_throughput_test();
+    ~one_to_one_sequenced_throughput_test();
 
-template<class T>
-batch_event_processor<T>::batch_event_processor(ring_buffer<T>& r, sequence& p, sequence& s) :
-    _rb(r), _pub(p), _sub(s) {
+protected:
+    virtual long run_pass();
+
+private:
+    ring_buffer<test_event>* _ring;
+    batch_event_processor<test_event>* _processor;
+    sequence_barrier* _barrier;
+    test_event_handler _handler;
+};
+
+one_to_one_sequenced_throughput_test::one_to_one_sequenced_throughput_test() {
+    run();
 }
 
-template<class T>
-void batch_event_processor<T>::run() {
-    long next_seq = _sub.get() + 1;
-    long avail_seq;
-    for (long i = 0; i < N;) {
-        while ((avail_seq = _pub.get()) < next_seq) {
-            std::this_thread::yield();
-        }
-        while (next_seq <= avail_seq) {
-            assert(_rb[next_seq] == i);
-            ++i;
-            ++next_seq;
-        }
-        _sub.set(avail_seq);
+one_to_one_sequenced_throughput_test::~one_to_one_sequenced_throughput_test() {
+    ;
+}
+
+long one_to_one_sequenced_throughput_test::run_pass() {
+    _ring = ring_buffer<test_event>::create_single_producer(BUFFER_SIZE);
+    _barrier = _ring->make_barrier();
+    _processor = new batch_event_processor<test_event>(*_ring, *_barrier, _handler);
+    _ring->add_gating_sequences({&_processor->get_sequence()});
+
+    _handler.reset(ITERATIONS);
+    std::thread processor_thread(&batch_event_processor<test_event>::run, _processor);
+    boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
+    for(long i=0; i<ITERATIONS; i++) {
+        long next = _ring->next();
+        _ring->get(next)._data = i;
+        _ring->publish(next);
     }
+    _handler.await();
+    _processor->halt();
+    processor_thread.join();
+
+    boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
+    boost::posix_time::time_duration diff = t2 - t1;
+    return (ITERATIONS * 1000) / (diff.total_milliseconds());
 }
 
 int main() {
-    for(long j=0; j<8; j++) {
-        ring_buffer<long> rb(1024 * 64);
-        sequence ps, ss;
-        sequencer seq(ps, ss, rb.size());
-        batch_event_processor<long> ep(rb, ps, ss);
-
-        std::thread t(&batch_event_processor<long>::run, &ep);
-        boost::posix_time::ptime t1 = boost::posix_time::microsec_clock::local_time();
-
-        for (long i = 0; i < N; i++) {
-            long next = seq.next();
-            rb[next] = i;
-            seq.publish();
-        }
-
-        t.join();
-        boost::posix_time::ptime t2 = boost::posix_time::microsec_clock::local_time();
-        boost::posix_time::time_duration diff = t2 - t1;
-        long long rate = (N * 1000) / (diff.total_milliseconds());
-
-        std::cout.imbue(std::locale(""));
-        std::cout << "Run " << j << ", Disruptor=" << std::fixed << rate << " ops/sec" << std::endl;
-    }
+    one_to_one_sequenced_throughput_test test;
 }
