@@ -3,3 +3,6 @@ target_link_libraries( one_to_one_sequenced_throughput_test pthread )
 
 add_executable( one_to_three_sequenced_throughput_test one_to_three_sequenced_throughput_test.cpp )
 target_link_libraries( one_to_three_sequenced_throughput_test pthread )
+
+add_executable( one_to_three_pipeline_sequenced_throughput_test one_to_three_pipeline_sequenced_throughput_test.cpp )
+target_link_libraries( one_to_three_pipeline_sequenced_throughput_test pthread )
