@@ -7,7 +7,7 @@ template< class T >
 class ring_buffer
 {
 public:
-    static std::unique_ptr< ring_buffer<T> > create_single_producer( size_t n );
+    static std::unique_ptr< ring_buffer<T> > create_single_producer( size_t n, wait_strategy& w );
 
     std::unique_ptr< sequence_barrier > make_barrier();
     std::unique_ptr< sequence_barrier > make_barrier( std::initializer_list< sequence* > );
@@ -27,10 +27,10 @@ private:
 };
 
 template< class T >
-inline std::unique_ptr< ring_buffer<T> > ring_buffer<T>::create_single_producer( size_t n )
+inline std::unique_ptr< ring_buffer<T> > ring_buffer<T>::create_single_producer( size_t n, wait_strategy& w )
 {
     return std::unique_ptr< ring_buffer<T> >( new ring_buffer<T>( 
-        std::unique_ptr< sequencer >( new sequencer( n ) ) ) );
+        std::unique_ptr< sequencer >( new sequencer( n, w ) ) ) );
 }
 
 template< class T >

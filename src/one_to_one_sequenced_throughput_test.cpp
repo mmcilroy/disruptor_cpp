@@ -35,7 +35,8 @@ const size_t BUFFER_SIZE = 1024 * 64;
 int64_t run_pass()
 {
     test_event_handler handler;
-    std::unique_ptr< ring_buffer< test_event > > ring = std::move( ring_buffer< test_event >::create_single_producer( BUFFER_SIZE ) );
+    std::unique_ptr< wait_strategy > wait( new yielding_wait_strategy() );
+    std::unique_ptr< ring_buffer< test_event > > ring = std::move( ring_buffer< test_event >::create_single_producer( BUFFER_SIZE, *wait ) );
     std::unique_ptr< sequence_barrier > barrier = std::move( ring->make_barrier() );
     std::unique_ptr< batch_event_processor< test_event > > processor( new batch_event_processor< test_event >( *ring, *barrier, handler ) );
     ring->add_gating_sequences( { &processor->get_sequence() } );

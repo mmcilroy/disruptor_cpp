@@ -41,7 +41,8 @@ const size_t NUM_PROCESSORS = 3;
 int64_t run_pass()
 {
     test_event_handler handler[ NUM_PROCESSORS ];
-    std::unique_ptr< ring_buffer< test_event > > ring = std::move( ring_buffer< test_event >::create_single_producer( BUFFER_SIZE ) );
+    std::unique_ptr< wait_strategy > wait( new yielding_wait_strategy() );
+    std::unique_ptr< ring_buffer< test_event > > ring = std::move( ring_buffer< test_event >::create_single_producer( BUFFER_SIZE, *wait ) );
     std::unique_ptr< sequence_barrier > barrier0 = std::move( ring->make_barrier() );
     std::unique_ptr< batch_event_processor< test_event > > processor0( new batch_event_processor< test_event >( *ring, *barrier0, handler[0] ) );
     std::unique_ptr< sequence_barrier > barrier1 = std::move( ring->make_barrier( { &processor0->get_sequence() } ) );

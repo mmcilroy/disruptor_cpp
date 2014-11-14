@@ -18,13 +18,13 @@ inline sequence::sequence()
     set( -1 );
 }
 
-inline long sequence::get() const
+inline int64_t sequence::get() const
 {
     std::atomic_thread_fence( std::memory_order::memory_order_acquire );
     return _val;
 }
 
-inline void sequence::set( long n )
+inline void sequence::set( int64_t n )
 {
     std::atomic_thread_fence( std::memory_order::memory_order_release );
     _val = n;

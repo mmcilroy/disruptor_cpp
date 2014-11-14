@@ -43,7 +43,7 @@ void batch_event_processor<T>::run()
     int64_t next_seq = _seq.get() + 1;
     while( _run )
     {
-        long avail_seq = _barrier.wait_for( next_seq );
+        int64_t avail_seq = _barrier.wait_for( next_seq );
         while( next_seq <= avail_seq )
         {
             _handler.on_event( _ring.get( next_seq ), next_seq, next_seq == avail_seq );
